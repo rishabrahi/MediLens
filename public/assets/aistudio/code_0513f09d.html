@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html lang="hi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MediLens - सेहत के बारे में पूछें</title>
+<!-- Google Fonts: Hind / Noto Sans Devanagari for clean Hindi typography -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&amp;family=Noto+Sans+Devanagari:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN with forms and container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Hind', 'Noto Sans Devanagari', 'sans-serif'],
+          },
+          colors: {
+            teal: {
+              50: '#f0fdf9',
+              100: '#ccfbf1',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+            },
+            brand: {
+              dark: '#0f2744',
+              teal: '#0d7e6c',
+              softBg: '#f4fbf7',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for Typography & Fine Adjustments -->
+<style data-purpose="typography">
+    body {
+      font-family: 'Hind', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+<style data-purpose="interactions">
+    .chip-btn {
+      transition: all 0.15s ease-in-out;
+    }
+    .chip-btn:hover {
+      background-color: #f8fafc;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
+    .chip-btn:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body class="bg-white text-slate-800 min-h-screen flex flex-col justify-between selection:bg-teal-100">
+<!-- BEGIN: TopNavigation -->
+<header class="w-full border-b border-slate-200 bg-white sticky top-0 z-40">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+<!-- Brand Logo & Tagline -->
+<div class="flex items-center space-x-3 cursor-pointer select-none">
+<div class="w-10 h-10 rounded-full border-2 border-teal-600 flex items-center justify-center text-teal-600 relative">
+<!-- Magnifying Glass with Plus Icon -->
+<svg class="w-6 h-6 stroke-[2.2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M10.5 7.5v6m-3-3h6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="text-2xl font-bold tracking-tight text-slate-900 leading-none">MediLens</span>
+<span class="text-xs text-slate-500 font-medium mt-1">आपकी सेहत को समझने में आपका साथी</span>
+</div>
+</div>
+<!-- Center Navigation Links -->
+<nav aria-label="मुख्य नेविगेशन" class="hidden md:flex items-center space-x-1 lg:space-x-3 text-slate-700 text-sm font-medium">
+<!-- होम -->
+<a class="flex items-center space-x-2 px-3.5 py-2 rounded-full hover:text-teal-800 transition-colors" href="#">
+<svg class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>होम</span>
+</a>
+<!-- सेहत पूछें (Active) -->
+<a aria-current="page" class="flex items-center space-x-2 px-4 py-2 rounded-full bg-teal-50 text-teal-800 font-medium transition-colors" href="#">
+<svg class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>सेहत पूछें</span>
+</a>
+<!-- लक्षण समझें -->
+<a class="flex items-center space-x-2 px-3.5 py-2 rounded-full hover:text-teal-800 transition-colors" href="#">
+<!-- Stethoscope Icon -->
+<svg class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4.5 4.5v5.25a6.75 6.75 0 0013.5 0V4.5M7.5 4.5h-3m16.5 0h-3m-5.25 10.5v2.25a3 3 0 006 0v-.75m-6 .75a3 3 0 01-6 0v-.75" stroke-linecap="round" stroke-linejoin="round"></path>
+<circle cx="18" cy="16.5" r="1.5"></circle>
+</svg>
+<span>लक्षण समझें</span>
+</a>
+<!-- रिपोर्ट समझें -->
+<a class="flex items-center space-x-2 px-3.5 py-2 rounded-full hover:text-teal-800 transition-colors" href="#">
+<!-- Document Icon -->
+<svg class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>रिपोर्ट समझें</span>
+</a>
+<!-- याद दिलाएँ -->
+<a class="flex items-center space-x-2 px-3.5 py-2 rounded-full hover:text-teal-800 transition-colors" href="#">
+<!-- Bell Icon -->
+<svg class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>याद दिलाएँ</span>
+</a>
+</nav>
+<!-- Right Action Controls (Language capsule & Settings) -->
+<div class="flex items-center space-x-3">
+<!-- Language Switcher Capsule -->
+<div aria-label="भाषा चयन" class="flex items-center bg-white border border-slate-200 rounded-full p-0.5 text-xs font-medium text-slate-700 shadow-sm" role="group">
+<button class="bg-teal-700 text-white px-3.5 py-1.5 rounded-full transition-colors font-medium" type="button">
+            हिन्दी
+          </button>
+<button class="text-slate-600 px-3 py-1.5 rounded-full hover:text-slate-900 transition-colors" type="button">
+            English
+          </button>
+</div>
+<!-- Settings Cog Button -->
+<button aria-label="सेटिंग्स" class="w-9 h-9 flex items-center justify-center rounded-full border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-colors shadow-sm" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</div>
+</header>
+<!-- END: TopNavigation -->
+<!-- BEGIN: MainContent -->
+<main class="flex-1 flex flex-col justify-between max-w-4xl w-full mx-auto px-4 py-8">
+<!-- Top Greeting and Disclaimer Section -->
+<div class="flex flex-col items-center text-center mt-2">
+<!-- Main Title -->
+<h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+        सेहत के बारे में पूछें
+      </h1>
+<!-- Subtitle -->
+<p class="text-slate-600 text-sm sm:text-base mt-2">
+        आसान शब्दों में पूछें। मैं छोटे-छोटे जवाब दूँगा।
+      </p>
+<!-- Medical Disclaimer Pill Banner -->
+<div class="mt-4 w-full max-w-2xl bg-[#eff9f4] text-teal-900 text-xs sm:text-sm py-2 px-4 rounded-xl flex items-center justify-start border border-teal-100/70" role="alert">
+<svg class="w-4 h-4 text-teal-700 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10" stroke-width="1.8"></circle>
+<path d="M12 16v-4m0-4h.01" stroke-linecap="round" stroke-width="1.8"></path>
+</svg>
+<span class="font-normal text-slate-700">यह सामान्य जानकारी है, डॉक्टर का इलाज नहीं।</span>
+</div>
+</div>
+<!-- Center Prompt Sparkle -->
+<div class="flex flex-col items-center justify-center my-auto py-12 text-center select-none" data-purpose="prompt-indicator">
+<!-- Star Spark Icon -->
+<div class="text-teal-600 mb-3 animate-pulse">
+<svg class="w-8 h-8" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2L13.7 8.3L20 10L13.7 11.7L12 18L10.3 11.7L4 10L10.3 8.3L12 2Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.75"></path>
+<circle cx="18" cy="6" fill="currentColor" r="1.5"></circle>
+</svg>
+</div>
+<p class="text-slate-600 text-sm font-normal">
+        नीचे दिए सुझाव दबाएँ या अपना सवाल लिखें।
+      </p>
+</div>
+<!-- Bottom Input & Query Suggestions Area -->
+<div class="w-full max-w-2xl mx-auto space-y-3 pb-6" data-purpose="chat-input-container">
+<!-- Suggestion Pill Chips -->
+<div class="flex flex-wrap items-center gap-2 justify-start sm:justify-start">
+<button class="chip-btn inline-flex items-center px-4 py-1.5 rounded-full border border-slate-200 text-slate-700 text-xs sm:text-sm bg-white font-normal shadow-sm" onclick="fillQuery('मुझे सिरदर्द है')" type="button">
+          मुझे सिरदर्द है
+        </button>
+<button class="chip-btn inline-flex items-center px-4 py-1.5 rounded-full border border-slate-200 text-slate-700 text-xs sm:text-sm bg-white font-normal shadow-sm" onclick="fillQuery('ब्लड प्रेशर क्या होता है?')" type="button">
+          ब्लड प्रेशर क्या होता है?
+        </button>
+<button class="chip-btn inline-flex items-center px-4 py-1.5 rounded-full border border-slate-200 text-slate-700 text-xs sm:text-sm bg-white font-normal shadow-sm" onclick="fillQuery('मेरी रिपोर्ट समझाएँ')" type="button">
+          मेरी रिपोर्ट समझाएँ
+        </button>
+</div>
+<!-- Chat Input Field Box -->
+<form class="relative flex items-center bg-white border border-slate-200 rounded-2xl p-1.5 pl-4 shadow-sm hover:border-slate-300 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all" onsubmit="handleSend(event)">
+<input class="w-full bg-transparent border-0 focus:ring-0 focus:outline-none text-slate-800 placeholder-slate-400 text-sm sm:text-base py-2.5 pr-2" id="chat-input" placeholder="यहाँ अपना सवाल लिखें..." type="text"/>
+<div class="flex items-center space-x-2 pr-1">
+<!-- Voice Dictation Button -->
+<button aria-label="वॉइस इनपुट" class="w-9 h-9 flex items-center justify-center rounded-xl bg-teal-50/80 text-teal-700 hover:bg-teal-100 transition-colors" title="बोलकर लिखें" type="button">
+<svg class="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Submit / Send Button -->
+<button aria-label="भेजें" class="w-9 h-9 flex items-center justify-center rounded-xl bg-[#80cbc4] hover:bg-[#66bb6a] text-white transition-colors shadow-sm" title="भेजें" type="submit">
+<!-- Paper airplane / Send Icon -->
+<svg class="w-4 h-4 rotate-45 -ml-0.5 mt-0.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
+</svg>
+</button>
+</div>
+</form>
+</div>
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: MainFooter -->
+<footer class="w-full border-t border-slate-200 bg-white py-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+<!-- Left Footer Brand & Medical Note -->
+<div class="flex flex-col items-center md:items-start text-center md:text-left space-y-1">
+<div class="flex items-center space-x-2">
+<!-- Small Mini Logo -->
+<div class="w-6 h-6 rounded-full border-2 border-teal-600 flex items-center justify-center text-teal-600">
+<svg class="w-3.5 h-3.5 stroke-[2.2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M10.5 7.5v6m-3-3h6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-lg font-bold text-slate-900 leading-none">MediLens</span>
+</div>
+<p class="text-xs text-slate-500">आपकी सेहत को समझने में आपका साथी</p>
+<p class="text-xs text-slate-500 mt-1">
+          MediLens एक मित्रवत स्वास्थ्य साथी है। यह सामान्य जानकारी देता है, इलाज नहीं।
+        </p>
+</div>
+<!-- Right Footer Emergency Contact & Copyright -->
+<div class="flex flex-col items-center md:items-end space-y-2">
+<!-- Emergency Helpline Pill -->
+<div class="inline-flex items-center px-4 py-2 rounded-full bg-rose-50/70 border border-rose-100 text-rose-600 text-xs sm:text-sm font-medium">
+<svg class="w-4 h-4 mr-1.5 flex-shrink-0 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>आपात स्थिति में 112 या 108 पर कॉल करें।</span>
+</div>
+<!-- Copyright Line -->
+<p class="text-xs text-slate-400">
+          © 2026 MediLens. सभी अधिकार सुरक्षित।
+        </p>
+</div>
+</div>
+</footer>
+<!-- END: MainFooter -->
+<!-- Interactive Script for Queries -->
+<script data-purpose="chat-interaction">
+    function fillQuery(text) {
+      const input = document.getElementById('chat-input');
+      if (input) {
+        input.value = text;
+        input.focus();
+      }
+    }
+
+    function handleSend(e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-input');
+      if (input && input.value.trim() !== '') {
+        const query = input.value;
+        input.value = '';
+        input.placeholder = `"${query}" पर जवाब तैयार हो रहा है...`;
+        setTimeout(() => {
+          input.placeholder = 'यहाँ अपना सवाल लिखें...';
+        }, 2500);
+      }
+    }
+  </script>
+</body></html>
