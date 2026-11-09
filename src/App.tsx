@@ -1,21 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
+  Activity,
   AlertTriangle,
+  ArrowDown,
   ArrowLeft,
   ArrowRight,
+  ArrowUpRight,
   Bell,
+  BookOpen,
   Calendar,
+  CheckCircle2,
+  Droplets,
   FileText,
+  Footprints,
+  HeartPulse,
   Home,
   Info,
   Loader2,
   MessageCircle,
   Mic,
+  Moon,
   Phone,
   Pill,
+  Search,
   Send,
   Settings,
+  ShieldCheck,
+  Sparkles,
   Stethoscope,
+  Sun,
   Trash2,
   Upload,
   X,
@@ -42,6 +55,16 @@ interface Reminder {
   alarmDone?: boolean;
 }
 
+type Mood = 'good' | 'okay' | 'low' | 'stressed';
+
+interface DailyCheckIn {
+  date: string;
+  mood: Mood | null;
+  sleepHours: number | null;
+  waterCups: number;
+  movementDone: boolean;
+}
+
 type AnswerKind = 'plain' | 'caution' | 'questions' | 'labs' | 'emergency';
 
 interface AnswerBlock {
@@ -52,6 +75,52 @@ interface AnswerBlock {
 
 function tx(lang: LanguageType, en: string, hi: string) {
   return lang === 'hi' ? hi : en;
+}
+
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function createDailyCheckIn(): DailyCheckIn {
+  return {
+    date: getLocalDateKey(),
+    mood: null,
+    sleepHours: null,
+    waterCups: 0,
+    movementDone: false,
+  };
+}
+
+function loadDailyCheckIn(): DailyCheckIn {
+  const empty = createDailyCheckIn();
+  try {
+    const saved = localStorage.getItem('medilens_daily_check_in');
+    if (!saved) return empty;
+    const parsed: unknown = JSON.parse(saved);
+    if (!parsed || typeof parsed !== 'object') return empty;
+
+    const value = parsed as Partial<DailyCheckIn>;
+    if (value.date !== empty.date) return empty;
+
+    return {
+      date: empty.date,
+      mood: value.mood === 'good' || value.mood === 'okay' || value.mood === 'low' || value.mood === 'stressed'
+        ? value.mood
+        : null,
+      sleepHours: typeof value.sleepHours === 'number' && value.sleepHours >= 0 && value.sleepHours <= 24
+        ? value.sleepHours
+        : null,
+      waterCups: typeof value.waterCups === 'number'
+        ? Math.max(0, Math.min(20, Math.floor(value.waterCups)))
+        : 0,
+      movementDone: value.movementDone === true,
+    };
+  } catch {
+    return empty;
+  }
 }
 
 function stripMarks(line: string) {
@@ -111,6 +180,86 @@ function reminderAlarmAt(item: Reminder) {
   const parsed = new Date(item.dateTime).getTime();
   return Number.isNaN(parsed) ? null : parsed;
 }
+
+const homeLearningTopics = [
+  {
+    icon: <HeartPulse className="h-5 w-5" aria-hidden="true" />,
+    category: { en: 'UNDERSTANDING YOUR BODY', hi: 'अपने शरीर को समझें' },
+    title: { en: 'What does blood pressure measure?', hi: 'ब्लड प्रेशर क्या मापता है?' },
+    description: { en: 'A plain-language introduction to the numbers and what they describe.', hi: 'नंबरों और उनके अर्थ का आसान परिचय।' },
+    prompt: { en: 'What does blood pressure measure?', hi: 'ब्लड प्रेशर क्या मापता है?' },
+  },
+  {
+    icon: <Activity className="h-5 w-5" aria-hidden="true" />,
+    category: { en: 'LAB REPORT BASICS', hi: 'लैब रिपोर्ट की जानकारी' },
+    title: { en: 'How do lab reference ranges work?', hi: 'लैब की संदर्भ सीमाएँ कैसे काम करती हैं?' },
+    description: { en: 'Learn why ranges differ and why one result is not a diagnosis.', hi: 'जानें कि सीमाएँ क्यों बदलती हैं और एक नतीजा निदान क्यों नहीं है।' },
+    prompt: { en: 'How do lab reference ranges work?', hi: 'लैब की संदर्भ सीमाएँ कैसे काम करती हैं?' },
+  },
+  {
+    icon: <BookOpen className="h-5 w-5" aria-hidden="true" />,
+    category: { en: 'GETTING PREPARED', hi: 'तैयारी करें' },
+    title: { en: 'What should I ask at an appointment?', hi: 'डॉक्टर से मिलने पर क्या पूछें?' },
+    description: { en: 'A simple way to organize questions and information before a visit.', hi: 'मुलाक़ात से पहले सवाल और जानकारी व्यवस्थित करने का आसान तरीका।' },
+    prompt: { en: 'What are useful questions to prepare for a doctor appointment?', hi: 'डॉक्टर से मिलने से पहले कौन से उपयोगी सवाल तैयार करूँ?' },
+  },
+  {
+    icon: <ShieldCheck className="h-5 w-5" aria-hidden="true" />,
+    category: { en: 'HEALTHY HABITS', hi: 'सेहतमंद आदतें' },
+    title: { en: 'Why does consistent sleep matter?', hi: 'नियमित नींद क्यों ज़रूरी है?' },
+    description: { en: 'A general look at sleep and the body, without one-size-fits-all promises.', hi: 'नींद और शरीर के बारे में सामान्य जानकारी, बिना पक्के दावों के।' },
+    prompt: { en: 'Why is a consistent sleep routine helpful for general health?', hi: 'सेहत के लिए नियमित नींद की दिनचर्या क्यों मददगार है?' },
+  },
+  {
+    icon: <FileText className="h-5 w-5" aria-hidden="true" />,
+    category: { en: 'LAB REPORT BASICS', hi: 'लैब रिपोर्ट की जानकारी' },
+    title: { en: 'What is a complete blood count?', hi: 'कम्प्लीट ब्लड काउंट क्या है?' },
+    description: { en: 'Get familiar with the kinds of information this common test reports.', hi: 'इस आम जाँच में मिलने वाली जानकारी से परिचित हों।' },
+    prompt: { en: 'What information does a complete blood count usually include?', hi: 'कम्प्लीट ब्लड काउंट में आमतौर पर कौन सी जानकारी होती है?' },
+  },
+  {
+    icon: <Activity className="h-5 w-5" aria-hidden="true" />,
+    category: { en: 'UNDERSTANDING YOUR BODY', hi: 'अपने शरीर को समझें' },
+    title: { en: 'What does body temperature tell us?', hi: 'शरीर का तापमान क्या बताता है?' },
+    description: { en: 'Understand temperature as one piece of health information, not the whole picture.', hi: 'तापमान को सेहत की एक जानकारी समझें, पूरी तस्वीर नहीं।' },
+    prompt: { en: 'What does body temperature tell us, and what are its limits?', hi: 'शरीर का तापमान क्या बताता है और इसकी सीमाएँ क्या हैं?' },
+  },
+  {
+    icon: <BookOpen className="h-5 w-5" aria-hidden="true" />,
+    category: { en: 'GETTING PREPARED', hi: 'तैयारी करें' },
+    title: { en: 'How can I keep track of symptoms?', hi: 'लक्षणों का रिकॉर्ड कैसे रखें?' },
+    description: { en: 'Simple details to note so you can describe changes clearly to a clinician.', hi: 'बदलावों को डॉक्टर को साफ़-साफ़ बताने के लिए आसान बातें नोट करें।' },
+    prompt: { en: 'What details are useful to track when I notice a symptom?', hi: 'लक्षण होने पर कौन सी जानकारी लिखना उपयोगी है?' },
+  },
+  {
+    icon: <ShieldCheck className="h-5 w-5" aria-hidden="true" />,
+    category: { en: 'MEDICINE SAFETY', hi: 'दवा की सुरक्षा' },
+    title: { en: 'How do I read a medicine label?', hi: 'दवा का लेबल कैसे पढ़ें?' },
+    description: { en: 'Learn what label sections mean and when to ask a pharmacist.', hi: 'लेबल के हिस्सों का मतलब जानें और कब फार्मासिस्ट से पूछें।' },
+    prompt: { en: 'What information is usually shown on a medicine label?', hi: 'दवा के लेबल पर आमतौर पर कौन सी जानकारी होती है?' },
+  },
+  {
+    icon: <HeartPulse className="h-5 w-5" aria-hidden="true" />,
+    category: { en: 'UNDERSTANDING YOUR BODY', hi: 'अपने शरीर को समझें' },
+    title: { en: 'Why can hydration matter?', hi: 'शरीर में पानी क्यों ज़रूरी है?' },
+    description: { en: 'A general explanation of the role fluids play in everyday body functions.', hi: 'रोज़मर्रा के शारीरिक कामों में पानी की भूमिका की सामान्य जानकारी।' },
+    prompt: { en: 'Why does the body need water for everyday functions?', hi: 'रोज़मर्रा के कामों के लिए शरीर को पानी क्यों चाहिए?' },
+  },
+  {
+    icon: <FileText className="h-5 w-5" aria-hidden="true" />,
+    category: { en: 'LAB REPORT BASICS', hi: 'लैब रिपोर्ट की जानकारी' },
+    title: { en: 'Why might a lab ask me to fast?', hi: 'लैब जाँच से पहले उपवास क्यों कह सकती है?' },
+    description: { en: 'Understand why preparation instructions vary by test and should be confirmed.', hi: 'जानें कि जाँच की तैयारी अलग-अलग क्यों होती है और पुष्टि क्यों ज़रूरी है।' },
+    prompt: { en: 'Why do some lab tests have fasting instructions?', hi: 'कुछ लैब जाँचों में उपवास की हिदायत क्यों होती है?' },
+  },
+  {
+    icon: <BookOpen className="h-5 w-5" aria-hidden="true" />,
+    category: { en: 'GETTING PREPARED', hi: 'तैयारी करें' },
+    title: { en: 'How can I understand health information?', hi: 'स्वास्थ्य जानकारी को कैसे समझें?' },
+    description: { en: 'A few useful checks for sources, context, and when to seek professional advice.', hi: 'स्रोत, संदर्भ और पेशेवर सलाह के बारे में कुछ उपयोगी बातें।' },
+    prompt: { en: 'How can I check whether health information is trustworthy?', hi: 'स्वास्थ्य जानकारी भरोसेमंद है या नहीं, यह कैसे जाँचें?' },
+  },
+];
 
 function startAlarmSound(ctx: AudioContext) {
   let timer = 0;
@@ -269,6 +418,18 @@ function StructuredAnswer({ text, emergency, lang }: { text: string; emergency?:
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [lang, setLang] = useState<LanguageType>('en');
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try {
+      return localStorage.getItem('medilens_theme') === 'dark';
+    } catch {
+      return false;
+    }
+  });
+  const [dailyCheckIn, setDailyCheckIn] = useState<DailyCheckIn>(loadDailyCheckIn);
+  const [quickQuestion, setQuickQuestion] = useState('');
+  const homeQuestionInputRef = useRef<HTMLInputElement>(null);
+  const [visibleHomeTopics, setVisibleHomeTopics] = useState(4);
+  const homeTopicsSentinelRef = useRef<HTMLDivElement>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
@@ -308,6 +469,108 @@ export default function App() {
   const [ringingId, setRingingId] = useState<string | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
   const stopAlarmRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (activeTab !== 'home') return;
+    const input = homeQuestionInputRef.current;
+    if (!input) return;
+
+    const prompts = lang === 'hi'
+      ? [
+        'ब्लड प्रेशर क्या बताता है?',
+        'लैब रिपोर्ट कैसे समझें?',
+        'नींद सेहत के लिए क्यों ज़रूरी है?',
+      ]
+      : [
+        'What does blood pressure tell us?',
+        'How do I read a lab report?',
+        'Why does sleep matter for health?',
+      ];
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let promptIndex = 0;
+    let characterIndex = 0;
+    let deleting = false;
+    let timer = 0;
+
+    const typeNextCharacter = () => {
+      if (input.value || document.activeElement === input) {
+        input.placeholder = tx(lang, 'What would you like to understand?', 'आप क्या समझना चाहते हैं?');
+        timer = window.setTimeout(typeNextCharacter, 500);
+        return;
+      }
+
+      const prompt = prompts[promptIndex];
+      characterIndex += deleting ? -1 : 1;
+      input.placeholder = prompt.slice(0, characterIndex);
+
+      if (!deleting && characterIndex === prompt.length) {
+        deleting = true;
+        timer = window.setTimeout(typeNextCharacter, reducedMotion ? 2600 : 1800);
+        return;
+      }
+
+      if (deleting && characterIndex === 0) {
+        deleting = false;
+        promptIndex = (promptIndex + 1) % prompts.length;
+      }
+
+      timer = window.setTimeout(typeNextCharacter, reducedMotion ? 160 : deleting ? 38 : 72);
+    };
+
+    if (reducedMotion) {
+      input.placeholder = prompts[0];
+      return;
+    }
+
+    timer = window.setTimeout(typeNextCharacter, 450);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, lang]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
+    try {
+      localStorage.setItem('medilens_theme', isDarkMode ? 'dark' : 'light');
+    } catch {
+      setStatusMessage(tx(lang, 'Your theme changed, but this browser could not save the preference.', 'थीम बदल गई, लेकिन ब्राउज़र इसे सहेज नहीं सका।'));
+    }
+  }, [isDarkMode, lang]);
+
+  useEffect(() => {
+    const refreshDailyCheckIn = () => {
+      const today = getLocalDateKey();
+      setDailyCheckIn((current) => current.date === today ? current : createDailyCheckIn());
+    };
+    const timer = window.setInterval(refreshDailyCheckIn, 60_000);
+    document.addEventListener('visibilitychange', refreshDailyCheckIn);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshDailyCheckIn);
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('medilens_daily_check_in', JSON.stringify(dailyCheckIn));
+    } catch {
+      setStatusMessage(tx(lang, 'Your daily check-in could not be saved in this browser.', 'आज की जानकारी इस ब्राउज़र में सहेजी नहीं जा सकी।'));
+    }
+  }, [dailyCheckIn]);
+
+  useEffect(() => {
+    if (activeTab !== 'home' || visibleHomeTopics >= homeLearningTopics.length) return;
+    const sentinel = homeTopicsSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setVisibleHomeTopics((count) => Math.min(count + 4, homeLearningTopics.length));
+      }
+    }, { rootMargin: '240px 0px' });
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [activeTab, visibleHomeTopics]);
 
   useEffect(() => {
     setSymptomDuration(lang === 'hi' ? '2-3 दिन' : '2-3 days');
@@ -805,6 +1068,15 @@ Fasting Blood Sugar: 98 mg/dL (Reference: 70 - 99 mg/dL)`,
     { id: 'reminders', label: tx(lang, 'Reminders', 'यादें'), icon: <Bell className="h-4 w-4" aria-hidden="true" /> },
   ];
 
+  const updateDailyCheckIn = (update: Partial<Omit<DailyCheckIn, 'date'>>) => {
+    setDailyCheckIn((current) => ({ ...current, ...update, date: getLocalDateKey() }));
+  };
+  const dailyMoodOptions: { id: Mood; emoji: string; en: string; hi: string }[] = [
+    { id: 'good', emoji: '🙂', en: 'Good', hi: 'अच्छा' },
+    { id: 'okay', emoji: '😐', en: 'Okay', hi: 'ठीक' },
+    { id: 'low', emoji: '😔', en: 'Low', hi: 'उदास' },
+    { id: 'stressed', emoji: '😟', en: 'Stressed', hi: 'तनाव' },
+  ];
   const durationOptions = [
     { hi: 'आज से', en: 'Since today' },
     { hi: '2-3 दिन', en: '2-3 days' },
@@ -857,11 +1129,15 @@ Fasting Blood Sugar: 98 mg/dL (Reference: 70 - 99 mg/dL)`,
             <LanguageSwitch lang={lang} onChange={setLang} />
             <button
               type="button"
-              onClick={() => setShowSettings(true)}
-              aria-label={tx(lang, 'Settings', 'सेटिंग्स')}
-              className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50"
+              onClick={() => setIsDarkMode((dark) => !dark)}
+              aria-label={isDarkMode ? tx(lang, 'Switch to light mode', 'लाइट मोड चालू करें') : tx(lang, 'Switch to dark mode', 'डार्क मोड चालू करें')}
+              aria-pressed={isDarkMode}
+              title={isDarkMode ? tx(lang, 'Switch to light mode', 'लाइट मोड चालू करें') : tx(lang, 'Switch to dark mode', 'डार्क मोड चालू करें')}
+              className="theme-toggle inline-flex h-12 w-12 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-50"
             >
-              <Settings className="h-5 w-5" aria-hidden="true" />
+              {isDarkMode
+                ? <Sun className="h-5 w-5" aria-hidden="true" />
+                : <Moon className="h-5 w-5" aria-hidden="true" />}
             </button>
           </div>
         </div>
@@ -928,8 +1204,8 @@ Fasting Blood Sugar: 98 mg/dL (Reference: 70 - 99 mg/dL)`,
             <p className="mt-4 text-base leading-relaxed text-slate-700">
               {tx(
                 lang,
-                'English and Hindi are in the header on every page. Questions are sent to an AI service to draft an explanation. Reminders stay in this browser only.',
-                'अंग्रेज़ी और हिन्दी का चयन हर पेज के हेडर में है। जवाब का मसौदा बनाने के लिए सवाल एक एआई सेवा को जाते हैं। यादें केवल इसी ब्राउज़र में रहती हैं।'
+                'English and Hindi are in the header on every page. Your theme and daily check-in are saved in this browser. Questions are sent to an AI service to draft an explanation, and reminders stay on this device.',
+                'अंग्रेज़ी और हिन्दी का चयन हर पेज के हेडर में है। थीम और दैनिक चेक-इन इसी ब्राउज़र में सहेजे जाते हैं। जवाब का मसौदा बनाने के लिए सवाल एआई सेवा को जाते हैं और यादें इसी डिवाइस पर रहती हैं।'
               )}
             </p>
 
@@ -956,90 +1232,401 @@ Fasting Blood Sugar: 98 mg/dL (Reference: 70 - 99 mg/dL)`,
       )}
 
       {activeTab === 'home' && (
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:py-12">
-          <section className="max-w-3xl">
-            <p className="text-sm font-semibold text-[#0f766e]">
-              {tx(lang, 'Educational health aid', 'शैक्षिक स्वास्थ्य सहायता')}
-            </p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-              {tx(lang, 'Understand Your Health Simply', 'अपनी सेहत को आसानी से समझें')}
-            </h1>
-            <p className="mt-4 text-lg leading-relaxed text-slate-700">
-              {tx(
-                lang,
-                'Ask simple questions, understand symptoms, understand reports, and get medicine reminders — in Hindi or English.',
-                'आसान सवाल पूछें, लक्षण समझें, रिपोर्ट समझें और दवा की याद पाएँ — हिंदी या अंग्रेज़ी में।'
-              )}
-            </p>
-            <div className="mt-8">
-              <button type="button" onClick={() => setActiveTab('ask')} className={`${primaryBtn} w-full sm:w-auto`}>
-                <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                {tx(lang, 'Ask a health question', 'सेहत का सवाल पूछें')}
-              </button>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
+          <section className="home-hero relative isolate overflow-hidden rounded-[2rem] bg-[#073b3d] px-6 py-10 text-white shadow-2xl shadow-teal-950/15 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
+            <div className="pointer-events-none absolute -right-20 -top-32 h-96 w-96 rounded-full bg-teal-300/15 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-48 left-1/3 h-96 w-96 rounded-full bg-cyan-400/10 blur-3xl" />
+            <div className="relative grid items-center gap-12 lg:grid-cols-[1.25fr_0.75fr]">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm font-medium text-teal-50">
+                  <Sparkles className="h-4 w-4 text-teal-200" aria-hidden="true" />
+                  {tx(lang, 'A calmer way to understand health', 'सेहत को समझने का आसान तरीका')}
+                </div>
+                <h1 className="mt-6 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+                  {tx(lang, 'A little more clarity, for your health.', 'आपकी सेहत के लिए, थोड़ी और स्पष्टता।')}
+                </h1>
+                <p className="mt-5 max-w-xl text-lg leading-relaxed text-teal-50/85">
+                  {tx(
+                    lang,
+                    'Explore health topics, make sense of lab reports, and keep track of reminders — in everyday English or Hindi.',
+                    'स्वास्थ्य विषय समझें, लैब रिपोर्ट पढ़ें और यादें रखें — आसान हिंदी या अंग्रेज़ी में।'
+                  )}
+                </p>
+
+                <form
+                  className="mt-8 flex flex-col gap-2 rounded-2xl border border-white/15 bg-white p-2 shadow-xl shadow-black/10 sm:flex-row"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    if (!quickQuestion.trim()) {
+                      setActiveTab('ask');
+                      return;
+                    }
+                    setChatInput(quickQuestion.trim());
+                    setQuickQuestion('');
+                    setActiveTab('ask');
+                  }}
+                >
+                  <label className="sr-only" htmlFor="home-question">
+                    {tx(lang, 'What would you like to understand?', 'आप क्या समझना चाहते हैं?')}
+                  </label>
+                  <div className="flex min-h-12 flex-1 items-center gap-3 px-3 text-slate-400">
+                    <Search className="h-5 w-5 shrink-0" aria-hidden="true" />
+                    <input
+                      id="home-question"
+                      ref={homeQuestionInputRef}
+                      value={quickQuestion}
+                      onChange={(event) => setQuickQuestion(event.target.value)}
+                      className="min-w-0 flex-1 border-0 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-500 focus:ring-0"
+                      placeholder={tx(lang, 'What would you like to understand?', 'आप क्या समझना चाहते हैं?')}
+                    />
+                  </div>
+                  <button type="submit" className={`${primaryBtn} w-full sm:w-auto`}>
+                    {tx(lang, 'Explore', 'जानें')}
+                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </form>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-teal-50/75">
+                  <span>{tx(lang, 'Try:', 'पूछें:')}</span>
+                  {[tx(lang, 'Blood pressure basics', 'ब्लड प्रेशर'), tx(lang, 'Reading lab results', 'लैब रिपोर्ट')].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => {
+                        setChatInput(suggestion);
+                        setActiveTab('ask');
+                      }}
+                      className="rounded-full border border-white/15 px-3 py-1.5 text-left text-teal-50 transition-colors hover:bg-white/10"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="relative mx-auto hidden w-full max-w-sm lg:block" aria-hidden="true">
+                <div className="absolute inset-8 rounded-full border border-teal-100/10" />
+                <div className="absolute inset-16 rounded-full border border-teal-100/10" />
+                <div className="relative rounded-[2rem] border border-white/15 bg-white/[0.08] p-6 shadow-2xl backdrop-blur-md">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-teal-50/80">{tx(lang, 'Your health, in context', 'आपकी सेहत, पूरे संदर्भ में')}</span>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-200/15 text-teal-100">
+                      <HeartPulse className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                  </div>
+                  <div className="my-8 flex h-36 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-300/10 to-cyan-200/5">
+                    <svg viewBox="0 0 300 120" className="w-full px-4 text-teal-200" fill="none" aria-hidden="true">
+                      <path d="M8 62h62l18-30 27 59 25-43 18 14h37l17-26 24 52 16-26h40" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M8 92h284" stroke="currentColor" strokeOpacity=".2" strokeWidth="1" />
+                      <circle cx="158" cy="62" r="6" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-black/10 p-3">
+                      <span className="text-xs text-teal-50/60">{tx(lang, 'Made for clarity', 'स्पष्टता के लिए')}</span>
+                      <p className="mt-1 text-sm font-semibold">{tx(lang, 'Everyday language', 'आसान भाषा')}</p>
+                    </div>
+                    <div className="rounded-xl bg-black/10 p-3">
+                      <span className="text-xs text-teal-50/60">{tx(lang, 'Always remember', 'हमेशा याद रखें')}</span>
+                      <p className="mt-1 text-sm font-semibold">{tx(lang, 'Education, not diagnosis', 'जानकारी, निदान नहीं')}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="absolute -left-7 top-16 flex items-center gap-2 rounded-xl border border-white/15 bg-[#104f4d] px-3 py-2 text-sm shadow-lg">
+                  <CheckCircle2 className="h-4 w-4 text-teal-200" aria-hidden="true" />
+                  {tx(lang, 'English + हिन्दी', 'अंग्रेज़ी + हिन्दी')}
+                </div>
+              </div>
             </div>
           </section>
 
-          <section className="mt-12 border-t border-slate-200 pt-10">
-            <h2 className="text-2xl font-semibold text-slate-900">
-              {tx(lang, 'Other tools', 'अन्य उपकरण')}
-            </h2>
-            <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-700">
-              {tx(
-                lang,
-                'Each one does a single job. Open the tool that matches what you have.',
-                'हर उपकरण एक काम करता है। जो आपके पास है, वही खोलें।'
-              )}
-            </p>
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
-              {[
-                {
-                  id: 'symptoms' as TabType,
-                  title: tx(lang, 'Walk through a symptom', 'एक लक्षण को क्रम से समझें'),
-                  body: tx(lang, 'Answer two short questions, then read one explanation.', 'दो छोटे सवालों के जवाब दें, फिर एक स्पष्टीकरण पढ़ें।'),
-                  icon: <Stethoscope className="h-5 w-5" aria-hidden="true" />,
-                },
-                {
-                  id: 'report' as TabType,
-                  title: tx(lang, 'Explain lab numbers', 'लैब नंबर समझें'),
-                  body: tx(lang, 'Paste results or upload a photo. The photo is read as text first.', 'नतीजे चिपकाएँ या फ़ोटो डालें। फ़ोटो पहले टेक्स्ट बनती है।'),
-                  icon: <FileText className="h-5 w-5" aria-hidden="true" />,
-                },
-                {
-                  id: 'reminders' as TabType,
-                  title: tx(lang, 'Save a reminder', 'एक याद सहेजें'),
-                  body: tx(lang, 'It rings at the time you set, while this tab is open.', 'आपके चुने समय पर बजेगी, जब यह टैब खुला हो।'),
-                  icon: <Bell className="h-5 w-5" aria-hidden="true" />,
-                },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setActiveTab(item.id)}
-                  className="flex min-h-24 flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white p-5 text-left transition-colors hover:border-slate-300 hover:bg-slate-50"
-                >
-                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-teal-50 text-[#0f766e]">
-                    {item.icon}
+          <section className="relative z-10 -mt-5 grid gap-3 px-2 sm:grid-cols-3 sm:px-6" aria-label={tx(lang, 'MediLens tools', 'MediLens उपकरण')}>
+            {[
+              {
+                id: 'symptoms' as TabType,
+                icon: <Stethoscope className="h-5 w-5" aria-hidden="true" />,
+                title: tx(lang, 'Explore a symptom', 'लक्षण समझें'),
+                description: tx(lang, 'A guided, simple explanation', 'आसान चरणों में जानकारी'),
+                tint: 'bg-cyan-50 text-cyan-800',
+              },
+              {
+                id: 'report' as TabType,
+                icon: <FileText className="h-5 w-5" aria-hidden="true" />,
+                title: tx(lang, 'Read a lab report', 'लैब रिपोर्ट पढ़ें'),
+                description: tx(lang, 'Paste results or add a photo', 'नतीजे लिखें या फ़ोटो डालें'),
+                tint: 'bg-violet-50 text-violet-800',
+              },
+              {
+                id: 'reminders' as TabType,
+                icon: <Bell className="h-5 w-5" aria-hidden="true" />,
+                title: tx(lang, 'Set a reminder', 'याद सेट करें'),
+                description: tx(lang, 'Keep a helpful nudge nearby', 'ज़रूरी याद पास रखें'),
+                tint: 'bg-amber-50 text-amber-800',
+              },
+            ].map((tool) => (
+              <button
+                key={tool.id}
+                type="button"
+                onClick={() => setActiveTab(tool.id)}
+                className="group flex min-h-24 items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 text-left shadow-lg shadow-slate-900/5 transition duration-200 hover:-translate-y-1 hover:border-teal-200 hover:shadow-xl sm:p-5"
+              >
+                <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tool.tint}`}>
+                  {tool.icon}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-slate-900">{tool.title}</span>
+                  <span className="mt-1 block text-sm text-slate-600">{tool.description}</span>
+                </span>
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-teal-700" aria-hidden="true" />
+              </button>
+            ))}
+          </section>
+
+          <section className="daily-checkin mt-14 rounded-3xl border border-teal-100 bg-gradient-to-br from-white via-teal-50/60 to-cyan-50/70 p-5 shadow-sm sm:mt-16 sm:p-8" aria-labelledby="daily-checkin-title">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-[0.14em] text-teal-800">
+                  {tx(lang, 'A little pause for you', 'अपने लिए एक छोटा सा पल')}
+                </p>
+                <h2 id="daily-checkin-title" className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                  {tx(lang, 'Your daily check-in', 'आज का चेक-इन')}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+                  {tx(lang, 'A gentle space to notice how your day is going. No targets and no judgment.', 'आज का दिन कैसा जा रहा है, इसे समझने की एक छोटी जगह। कोई लक्ष्य नहीं, कोई तुलना नहीं।')}
+                </p>
+              </div>
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-teal-100 bg-white/80 px-3 py-2 text-xs font-medium text-slate-600">
+                <ShieldCheck className="h-4 w-4 text-teal-700" aria-hidden="true" />
+                {tx(lang, 'Saved only on this device', 'सिर्फ़ इसी डिवाइस पर सहेजा')}
+              </span>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="daily-option-card rounded-2xl border border-slate-200/80 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-900">{tx(lang, 'How are you feeling?', 'आप कैसा महसूस कर रहे हैं?')}</p>
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  {dailyMoodOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => updateDailyCheckIn({ mood: dailyCheckIn.mood === option.id ? null : option.id })}
+                      aria-pressed={dailyCheckIn.mood === option.id}
+                      aria-label={tx(lang, option.en, option.hi)}
+                      title={tx(lang, option.en, option.hi)}
+                      className={`mood-option flex min-h-11 items-center justify-center rounded-xl border text-xl transition hover:-translate-y-0.5 ${
+                        dailyCheckIn.mood === option.id
+                          ? 'selected border-teal-600 bg-teal-50 ring-2 ring-teal-600/20'
+                          : 'border-slate-200 bg-slate-50 hover:border-teal-300'
+                      }`}
+                    >
+                      {option.emoji}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 min-h-5 text-xs text-slate-600">
+                  {dailyCheckIn.mood
+                    ? tx(
+                      lang,
+                      `Today: ${dailyMoodOptions.find((option) => option.id === dailyCheckIn.mood)?.en}`,
+                      `आज: ${dailyMoodOptions.find((option) => option.id === dailyCheckIn.mood)?.hi}`
+                    )
+                    : tx(lang, 'Choose what feels right today.', 'आज जो सही लगे, वह चुनें।')}
+                </p>
+              </div>
+
+              <div className="daily-option-card rounded-2xl border border-slate-200/80 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-900">{tx(lang, 'Water breaks', 'पानी के विराम')}</p>
+                <p className="mt-1 text-xs text-slate-600">{tx(lang, 'Log a glass when you have one.', 'पानी पीने पर एक गिलास दर्ज करें।')}</p>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="inline-flex items-center gap-2 text-teal-800">
+                    <Droplets className="h-5 w-5" aria-hidden="true" />
+                    <span className="text-2xl font-semibold tabular-nums text-slate-900">{dailyCheckIn.waterCups}</span>
+                    <span className="text-xs text-slate-600">{tx(lang, 'glasses', 'गिलास')}</span>
                   </span>
-                  <span>
-                    <span className="block text-lg font-semibold text-slate-900">{item.title}</span>
-                    <span className="mt-1 block text-base leading-relaxed text-slate-700">{item.body}</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateDailyCheckIn({ waterCups: Math.max(0, dailyCheckIn.waterCups - 1) })}
+                      disabled={dailyCheckIn.waterCups === 0}
+                      className="daily-counter-button min-h-10 min-w-10 rounded-xl border border-slate-200 bg-slate-50 text-lg font-semibold text-slate-700 hover:bg-teal-50 disabled:opacity-40"
+                      aria-label={tx(lang, 'Remove one glass', 'एक गिलास हटाएँ')}
+                    >
+                      −
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateDailyCheckIn({ waterCups: Math.min(20, dailyCheckIn.waterCups + 1) })}
+                      disabled={dailyCheckIn.waterCups >= 20}
+                      className="min-h-10 min-w-10 rounded-xl bg-teal-700 text-lg font-semibold text-white hover:bg-teal-800 disabled:opacity-40"
+                      aria-label={tx(lang, 'Log one glass', 'एक गिलास दर्ज करें')}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="daily-option-card rounded-2xl border border-slate-200/80 bg-white p-4">
+                <label htmlFor="daily-sleep-hours" className="text-sm font-semibold text-slate-900">
+                  {tx(lang, 'Sleep, your way', 'आपकी नींद')}
+                </label>
+                <p className="mt-1 text-xs text-slate-600">{tx(lang, 'Optional: note last night.', 'वैकल्पिक: पिछली रात दर्ज करें।')}</p>
+                <div className="mt-3 flex items-center gap-3">
+                  <input
+                    id="daily-sleep-hours"
+                    type="number"
+                    min="0"
+                    max="24"
+                    step="0.5"
+                    value={dailyCheckIn.sleepHours ?? ''}
+                    onChange={(event) => {
+                      const value = event.target.value === '' ? null : Number(event.target.value);
+                      if (value === null || (Number.isFinite(value) && value >= 0 && value <= 24)) {
+                        updateDailyCheckIn({ sleepHours: value });
+                      }
+                    }}
+                    className="min-h-11 w-24 rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900"
+                    aria-label={tx(lang, 'Hours of sleep', 'नींद के घंटे')}
+                  />
+                  <span className="text-sm text-slate-600">{tx(lang, 'hours (optional)', 'घंटे (वैकल्पिक)')}</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => updateDailyCheckIn({ movementDone: !dailyCheckIn.movementDone })}
+                aria-pressed={dailyCheckIn.movementDone}
+                className={`daily-option-card flex min-h-32 flex-col items-start rounded-2xl border p-4 text-left transition hover:border-teal-300 ${
+                  dailyCheckIn.movementDone
+                    ? 'movement-done border-teal-300 bg-teal-50'
+                    : 'border-slate-200/80 bg-white'
+                }`}
+              >
+                <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                  dailyCheckIn.movementDone ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {dailyCheckIn.movementDone
+                    ? <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+                    : <Footprints className="h-5 w-5" aria-hidden="true" />}
+                </span>
+                <span className="mt-3 text-sm font-semibold text-slate-900">
+                  {dailyCheckIn.movementDone
+                    ? tx(lang, 'Movement break logged', 'चलने का विराम दर्ज हुआ')
+                    : tx(lang, 'Take a movement break?', 'चलने का छोटा विराम?')}
+                </span>
+                <span className="mt-1 text-xs leading-relaxed text-slate-600">
+                  {tx(lang, 'A small stretch or walk counts.', 'थोड़ा खिंचाव या टहलना भी ठीक है।')}
+                </span>
+              </button>
+            </div>
+            <p className="mt-4 text-xs leading-relaxed text-slate-500">
+              {tx(lang, 'Your check-in is for personal reflection, not medical tracking or advice. It resets each day.', 'यह चेक-इन निजी जानकारी के लिए है, मेडिकल निगरानी या सलाह के लिए नहीं। यह हर दिन रीसेट होता है।')}
+            </p>
+          </section>
+
+          <section className="mt-20 sm:mt-24" aria-labelledby="learning-title">
+            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+              <div className="max-w-2xl">
+                <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-700">
+                  {tx(lang, 'A good place to start', 'यहाँ से शुरू करें')}
+                </p>
+                <h2 id="learning-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+                  {tx(lang, 'Curious about your health?', 'अपनी सेहत के बारे में जानें')}
+                </h2>
+                <p className="mt-3 text-base leading-relaxed text-slate-600 sm:text-lg">
+                  {tx(lang, 'Browse simple explainers, one question at a time. Choose a topic to open it in your health chat.', 'आसान जानकारी पढ़ें, एक सवाल के साथ। कोई विषय चुनें और उसे अपनी हेल्थ चैट में खोलें।')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => document.getElementById('learning-feed')?.scrollIntoView({ behavior: 'smooth' })}
+                className="inline-flex min-h-11 shrink-0 items-center gap-2 self-start rounded-xl px-3 text-sm font-semibold text-teal-800 transition hover:bg-teal-50 sm:self-auto"
+              >
+                {tx(lang, 'Explore topics', 'विषय देखें')}
+                <ArrowDown className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div id="learning-feed" className="mt-8 grid scroll-mt-28 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {homeLearningTopics.slice(0, visibleHomeTopics).map((topic, index) => (
+                <button
+                  key={topic.title.en}
+                  type="button"
+                  onClick={() => {
+                    setChatInput(topic.prompt[lang]);
+                    setActiveTab('ask');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="learning-card group flex min-h-56 flex-col items-start rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:border-teal-200 hover:shadow-xl hover:shadow-teal-950/5 sm:p-6"
+                  style={{ animationDelay: `${(index % 4) * 70}ms` }}
+                >
+                  <div className="flex w-full items-center justify-between gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-teal-800 transition-colors group-hover:bg-teal-100">
+                      {topic.icon}
+                    </span>
+                    <ArrowUpRight className="h-4 w-4 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-teal-700" aria-hidden="true" />
+                  </div>
+                  <span className="mt-5 text-[11px] font-bold tracking-[0.13em] text-teal-800">{topic.category[lang]}</span>
+                  <span className="mt-2 text-lg font-semibold leading-snug text-slate-950">{topic.title[lang]}</span>
+                  <span className="mt-2 text-sm leading-relaxed text-slate-600">{topic.description[lang]}</span>
+                  <span className="mt-auto pt-5 text-sm font-semibold text-teal-800">
+                    {tx(lang, 'Ask MediLens', 'MediLens से पूछें')}
+                    <span className="ml-1 inline-block transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
                   </span>
                 </button>
               ))}
             </div>
+            {visibleHomeTopics < homeLearningTopics.length ? (
+              <div ref={homeTopicsSentinelRef} className="flex min-h-20 items-center justify-center gap-3 text-sm text-slate-500" aria-live="polite">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-teal-600" />
+                {tx(lang, 'More topics as you explore…', 'आगे और विषय देखें…')}
+              </div>
+            ) : (
+              <p className="mt-8 text-center text-sm text-slate-500">
+                {tx(lang, 'You’re all caught up. Choose a topic above or explore a tool.', 'सभी विषय दिखा दिए गए हैं। ऊपर से कोई विषय या उपकरण चुनें।')}
+              </p>
+            )}
           </section>
 
-          <section className="mt-10 border-t border-slate-200 pt-10">
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h2 className="text-xl font-semibold text-slate-900">
-                {tx(lang, 'What you can use it for', 'इसका उपयोग किसके लिए करें')}
-              </h2>
-              <ul className="mt-4 list-disc space-y-2 pl-5 text-base leading-relaxed text-slate-800">
-                <li>{tx(lang, 'Everyday wording for symptoms and common health terms', 'लक्षणों और आम स्वास्थ्य शब्दों की रोजमर्रा की भाषा')}</li>
-                <li>{tx(lang, 'A plain reading of lab numbers you paste or photograph', 'चिपकाए या फोटो में भेजे गए लैब नंबरों को आसान भाषा में पढ़ना')}</li>
-                <li>{tx(lang, 'Reminders that ring on this device at the time you set', 'आपके चुने समय पर इसी डिवाइस पर बजने वाली यादें')}</li>
-              </ul>
+          <section className="mt-20 overflow-hidden rounded-3xl border border-teal-100 bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-6 sm:mt-24 sm:p-10">
+            <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+              <div>
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-teal-800 shadow-sm">
+                  <ShieldCheck className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+                  {tx(lang, 'Helpful context, with clear boundaries.', 'उपयोगी जानकारी, साफ़ सीमाओं के साथ।')}
+                </h2>
+                <p className="mt-3 leading-relaxed text-slate-600">
+                  {tx(lang, 'MediLens is designed to explain general health information — not to replace your clinician or make decisions for you.', 'MediLens सामान्य स्वास्थ्य जानकारी समझाता है — यह डॉक्टर की जगह नहीं लेता और आपके लिए निर्णय नहीं करता।')}
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  tx(lang, 'Simple explanations, not medical jargon', 'आसान व्याख्या, मुश्किल शब्द नहीं'),
+                  tx(lang, 'English and Hindi, side by side', 'अंग्रेज़ी और हिन्दी में'),
+                  tx(lang, 'Your reminders stay in this browser', 'आपकी यादें इसी ब्राउज़र में रहती हैं'),
+                  tx(lang, 'Urgent symptoms need urgent care', 'गंभीर लक्षणों में तुरंत मदद लें'),
+                ].map((item) => (
+                  <div key={item} className="flex min-h-16 items-start gap-3 rounded-xl border border-white bg-white/80 p-4 text-sm font-medium leading-relaxed text-slate-800 shadow-sm">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal-700" aria-hidden="true" />
+                    {item}
+                  </div>
+                ))}
+              </div>
             </div>
+          </section>
+
+          <section className="mt-16 mb-4 flex flex-col items-start justify-between gap-5 rounded-2xl bg-slate-950 px-6 py-7 text-white sm:flex-row sm:items-center sm:px-8">
+            <div>
+              <h2 className="text-xl font-semibold">{tx(lang, 'Not sure where to start?', 'पता नहीं कहाँ से शुरू करें?')}</h2>
+              <p className="mt-1 text-sm leading-relaxed text-slate-300">{tx(lang, 'Ask a question in your own words. You can choose Hindi or English.', 'अपने शब्दों में सवाल पूछें। हिंदी या अंग्रेज़ी चुनें।')}</p>
+            </div>
+            <button type="button" onClick={() => setActiveTab('ask')} className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-teal-500 px-5 font-semibold text-white transition hover:bg-teal-400">
+              <MessageCircle className="h-5 w-5" aria-hidden="true" />
+              {tx(lang, 'Start a conversation', 'बात शुरू करें')}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
           </section>
         </main>
       )}
@@ -1659,10 +2246,16 @@ Fasting Blood Sugar: 98 mg/dL (Reference: 70 - 99 mg/dL)`,
               )}
             </p>
           </div>
-          <a href="tel:112" className="inline-flex min-h-12 items-center gap-2 self-start rounded-xl border border-red-200 bg-red-50 px-4 text-base font-semibold text-red-800 hover:bg-red-100">
-            <Phone className="h-5 w-5" aria-hidden="true" />
-            {tx(lang, 'Emergency: call 112 or 108', 'आपात: 112 या 108 पर कॉल करें')}
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => setShowSettings(true)} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50">
+              <Settings className="h-4 w-4" aria-hidden="true" />
+              {tx(lang, 'Privacy & settings', 'निजता और सेटिंग्स')}
+            </button>
+            <a href="tel:112" className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-800 hover:bg-red-100">
+              <Phone className="h-5 w-5" aria-hidden="true" />
+              {tx(lang, 'Emergency: call 112 or 108', 'आपात: 112 या 108 पर कॉल करें')}
+            </a>
+          </div>
         </div>
       </footer>
     </div>
