@@ -1,5 +1,5 @@
 """
-SehatSaathi AI (सेहतसाथी) - Hackathon MVP
+MediLens - Healthcare Safety Rules
 Stage 3: Deterministic Healthcare Safety Engine (safety_rules.py)
 -----------------------------------------------------------------
 Role Responsibility: Member 3 (Safety & QA Engineer)
@@ -161,7 +161,7 @@ def evaluate_safety(text: str, language: str = "en") -> SafetyAssessment:
     if sanitize_res["is_prompt_injection"]:
         msg = (
             "⚠️ Security Notice: Unsafe prompt override directives were detected and neutralised. "
-            "SehatSaathi AI operates strictly within educational healthcare boundaries."
+            "MediLens operates strictly within educational healthcare boundaries."
             if language == "en" else
             "⚠️ सुरक्षा सूचना: असुरक्षित निर्देश हटा दिए गए हैं। सेहतसाथी AI केवल शैक्षणिक स्वास्थ्य साक्षरता के लिए है।"
         )
@@ -198,7 +198,7 @@ def evaluate_safety(text: str, language: str = "en") -> SafetyAssessment:
     rx_res = check_prescription_attempt(clean_text)
     if rx_res["is_prescription_attempt"]:
         msg = (
-            "🛑 Healthcare Policy Restriction: SehatSaathi AI cannot prescribe medications, "
+            "🛑 Healthcare Policy Restriction: MediLens cannot prescribe medications, "
             "calculate dosages, or advise on starting/stopping treatments. "
             "Medication decisions require an in-person clinical assessment by a licensed physician or pharmacist."
             if language == "en" else

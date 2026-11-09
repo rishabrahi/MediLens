@@ -454,7 +454,7 @@ export default function App() {
         {
           id: (Date.now() + 1).toString(),
           sender: 'ai',
-          text: data.content || tx(lang, 'Sorry, a response could not be retrieved.', 'क्षमा करें, जवाब नहीं मिल सका।'),
+          text: data.content || data.error || tx(lang, 'Sorry, a response could not be retrieved.', 'क्षमा करें, जवाब नहीं मिल सका।'),
           isEmergency: data.status === 'emergency',
         },
       ]);
@@ -534,7 +534,7 @@ Questions for Your Doctor:
         body: JSON.stringify({ query: prompt, language: lang }),
       });
       const data = await res.json();
-      setSymptomResult(data);
+      setSymptomResult({ ...data, content: data.content || data.error });
     } catch {
       setSymptomResult({
         status: 'success',

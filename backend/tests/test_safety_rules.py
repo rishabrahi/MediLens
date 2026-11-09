@@ -1,6 +1,6 @@
 """
-SehatSaathi AI - Automated Safety Unit Tests
-Tests for Member 3's safety_rules.py module
+MediLens - Automated Safety Unit Tests
+Tests for MediLens' safety_rules.py module
 """
 
 import sys
